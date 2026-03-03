@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['Consolas', 'Monaco', 'Courier New', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    /* Custom animations */
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(180deg); }
+    }
+    @keyframes fall {
+      0% { transform: translateY(-100vh); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(100vh); opacity: 0; }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes glitch {
+      0%, 100% { transform: translate(0); }
+      20% { transform: translate(-2px, 2px); }
+      40% { transform: translate(-2px, -2px); }
+      60% { transform: translate(2px, 2px); }
+      80% { transform: translate(2px, -2px); }
+    }
+    @keyframes colorShift {
+      0%, 100% { color: #3b82f6; text-shadow: 0 0 10px #3b82f6; }
+      33% { color: #06b6d4; text-shadow: 0 0 10px #06b6d4; }
+      66% { color: #8b5cf6; text-shadow: 0 0 10px #8b5cf6; }
+    }
+    @keyframes typewriter {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    @keyframes wave {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    @keyframes glow {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.3); }
+    }
+    .animate-glitch { animation: glitch 0.3s ease-in-out; }
+    .animate-wave { animation: wave 2s ease-in-out infinite; }
+    .animate-glow { animation: glow 2s ease-in-out infinite; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(59, 130, 246, 0.5); }
+      50% { border-color: rgba(59, 130, 246, 1); }
+    }
+    .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+    .animate-slide-in { animation: slideIn 0.2s ease-out forwards; }
+    .animate-pulse-border { animation: pulse-border 2s ease-in-out infinite; }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.3); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.5); }
+    
+    /* Dialog backdrop */
+    .dialog-backdrop {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+    }
+    
+    /* Hide scrollbar in search list */
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950 transition-colors duration-300">
+  
+  <!-- Floating Particles -->
+  <div id="particles" class="fixed inset-0 pointer-events-none overflow-hidden -z-10"></div>
+  
+  <!-- Matrix Rain -->
+  <div id="matrix-rain" class="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-5 -z-10"></div>
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 border-b border-gray-200/50 dark:border-gray-800/50">
+    <div class="max-w-6xl mx-auto px-4 py-3">
+      <div class="flex items-center justify-between">
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg text-gray-900 dark:text-white">AI Dashboard</h1>
+            <p class="text-xs text-gray-500 dark:text-gray-400"><span id="model-count">0</span> models</p>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2">
+          <!-- Search Button -->
+          <button onclick="openSearch()" class="flex items-center gap-2 h-9 px-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <span class="hidden sm:inline text-sm">Search</span>
+            <kbd class="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">K</kbd>
+          </button>
+
+          <!-- Add Model Button -->
+          <button onclick="openAddModal()" class="flex items-center gap-2 h-9 px-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg shadow-blue-500/20 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span class="hidden sm:inline text-sm">Add Model</span>
+          </button>
+
+          <!-- Theme Toggle -->
+          <button onclick="toggleTheme()" id="theme-btn" class="flex items-center justify-center w-9 h-9 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <svg id="theme-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- ASCII Art Hero -->
+    <section class="mb-8 text-center overflow-hidden">
+      <div id="ascii-art" class="font-mono text-xs sm:text-sm leading-tight whitespace-pre text-center overflow-hidden"></div>
+    </section>
+
+    <!-- Keyboard Shortcuts -->
+    <section class="mb-8 flex flex-wrap items-center justify-center gap-3">
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100/80 dark:bg-gray-800/80 text-sm">
+        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+        </svg>
+        <span class="text-gray-600 dark:text-gray-400">Shortcuts:</span>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100/80 dark:bg-gray-800/80 text-sm">
+        <kbd class="px-2 py-1 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">K</kbd>
+        <span class="text-gray-600 dark:text-gray-400">Search</span>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100/80 dark:bg-gray-800/80 text-sm">
+        <kbd class="px-2 py-1 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">N</kbd>
+        <span class="text-gray-600 dark:text-gray-400">Add Model</span>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100/80 dark:bg-gray-800/80 text-sm">
+        <kbd class="px-2 py-1 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">Esc</kbd>
+        <span class="text-gray-600 dark:text-gray-400">Close</span>
+      </div>
+    </section>
+
+    <!-- Models Grid -->
+    <section>
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+          </svg>
+          Your AI Models
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400"><span id="favorite-count">0</span> favorites</p>
+      </div>
+
+      <div id="models-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="hidden text-center py-16 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800">
+        <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No AI Models Yet</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-4">Add your first AI model to get started</p>
+        <button onclick="openAddModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium hover:from-blue-600 hover:to-cyan-600 transition-all">
+          <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Add Model
+        </button>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-16 text-center text-sm text-gray-500 dark:text-gray-400">
+      <div class="font-mono text-xs mb-2">═══════════════════════════════════════</div>
+      <p>Built with HTML, Tailwind CSS & Material Design 3</p>
+      <p class="mt-1">Press <kbd class="px-2 py-0.5 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">K</kbd> to search • Click cards to navigate</p>
+    </footer>
+  </main>
+
+  <!-- Search Modal -->
+  <div id="search-modal" class="fixed inset-0 z-50 hidden">
+    <div class="dialog-backdrop absolute inset-0" onclick="closeSearch()"></div>
+    <div class="absolute inset-0 flex items-start justify-center pt-[15vh] px-4">
+      <div class="relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-in overflow-hidden">
+        <!-- Search Input -->
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input 
+            id="search-input" 
+            type="text" 
+            placeholder="Search models..." 
+            class="flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder-gray-400"
+            oninput="filterModels(this.value)"
+            onkeydown="handleSearchKeydown(event)"
+          >
+          <kbd class="px-2 py-1 text-xs font-medium rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">Esc</kbd>
+        </div>
+        <!-- Search Results -->
+        <div id="search-results" class="max-h-80 overflow-y-auto hide-scrollbar p-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="form-modal" class="fixed inset-0 z-50 hidden">
+    <div class="dialog-backdrop absolute inset-0" onclick="closeFormModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center px-4">
+      <div class="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-in">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 id="form-title" class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+            </svg>
+            Add New AI Model
+          </h3>
+          <button onclick="closeFormModal()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Form -->
+        <form id="model-form" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+            <input 
+              id="form-name" 
+              type="text" 
+              placeholder="e.g., ChatGPT" 
+              required
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL</label>
+            <input 
+              id="form-url" 
+              type="text" 
+              placeholder="e.g., https://chat.openai.com" 
+              required
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (optional)</label>
+            <input 
+              id="form-description" 
+              type="text" 
+              placeholder="Brief description..." 
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            >
+          </div>
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" onclick="closeFormModal()" class="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              Cancel
+            </button>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium transition-all">
+              <span id="form-submit-text">Add Model</span>
+            </button>
+          </div>
+          <input type="hidden" id="form-edit-id">
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 z-50 hidden">
+    <div class="dialog-backdrop absolute inset-0" onclick="closeDeleteModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center px-4">
+      <div class="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-in p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Delete AI Model</h3>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">Are you sure you want to delete <strong id="delete-model-name"></strong>? This action cannot be undone.</p>
+        <div class="flex justify-end gap-3">
+          <button onclick="closeDeleteModal()" class="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            Cancel
+          </button>
+          <button onclick="confirmDelete()" class="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors">
+            Delete
+          </button>
+        </div>
+        <input type="hidden" id="delete-model-id">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== Constants ====================
+    const STORAGE_KEY = 'ai-dashboard-models';
+    const THEME_KEY = 'ai-dashboard-theme';
+    
+    const DEFAULT_MODELS = [
+      { id: '1', name: 'z.ai', url: 'https://z.ai', description: 'Z.ai - AI-Powered Development Platform', isFavorite: true, createdAt: Date.now() },
+      { id: '2', name: 'ChatGPT', url: 'https://chat.openai.com', description: "OpenAI's ChatGPT", isFavorite: true, createdAt: Date.now() },
+      { id: '3', name: 'Claude', url: 'https://claude.ai', description: "Anthropic's Claude AI", isFavorite: true, createdAt: Date.now() },
+      { id: '4', name: 'Gemini', url: 'https://gemini.google.com', description: "Google's Gemini AI", isFavorite: false, createdAt: Date.now() },
+      { id: '5', name: 'Perplexity', url: 'https://perplexity.ai', description: 'AI-Powered Search Engine', isFavorite: false, createdAt: Date.now() },
+      { id: '6', name: 'Grok', url: 'https://x.com/grok', description: "xAI's Grok", isFavorite: false, createdAt: Date.now() },
+    ];
+
+    const ASCII_ART = [
+      '╔═══════════════════════════════════════════════════════════════╗',
+      '║                                                               ║',
+      '║       ██████╗ ███████╗███╗   ██╗██╗  ██╗██╗   ██╗██████╗      ║',
+      '║      ██╔════╝ ██╔════╝████╗  ██║██║  ██║██║   ██║██╔══██╗     ║',
+      '║      ██║  ███╗█████╗  ██╔██╗ ██║███████║██║   ██║██████╔╝     ║',
+      '║      ██║   ██║██╔══╝  ██║╚██╗██║██╔══██║██║   ██║██╔══██╗     ║',
+      '║      ╚██████╔╝███████╗██║ ╚████║██║  ██║╚██████╔╝██████╔╝     ║',
+      '║       ╚═════╝ ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝      ║',
+      '║                                                               ║',
+      '║                   ⚡ AI Model Dashboard ⚡                    ║',
+      '║                                                               ║',
+      '╚═══════════════════════════════════════════════════════════════╝',
+    ];
+
+    const MATRIX_CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF';
+
+    // ==================== State ====================
+    let models = [];
+    let currentEditId = null;
+    let selectedSearchIndex = 0;
+
+    // ==================== Storage ====================
+    function loadModels() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        models = stored ? JSON.parse(stored) : [...DEFAULT_MODELS];
+      } catch {
+        models = [...DEFAULT_MODELS];
+      }
+    }
+
+    function saveModels() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(models));
+    }
+
+    function loadTheme() {
+      const theme = localStorage.getItem(THEME_KEY) || 'system';
+      applyTheme(theme);
+    }
+
+    function saveTheme(theme) {
+      localStorage.setItem(THEME_KEY, theme);
+    }
+
+    function applyTheme(theme) {
+      const root = document.documentElement;
+      if (theme === 'system') {
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.classList.toggle('dark', systemDark);
+      } else {
+        root.classList.toggle('dark', theme === 'dark');
+      }
+      updateThemeIcon(theme);
+    }
+
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('theme-icon');
+      if (theme === 'dark') {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>';
+      } else if (theme === 'light') {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>';
+      } else {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>';
+      }
+    }
+
+    function toggleTheme() {
+      const current = localStorage.getItem(THEME_KEY) || 'system';
+      const next = current === 'light' ? 'dark' : current === 'dark' ? 'system' : 'light';
+      saveTheme(next);
+      applyTheme(next);
+    }
+
+    // ==================== ASCII Art Animation ====================
+    function animateASCII() {
+      const container = document.getElementById('ascii-art');
+      const chars = '█▓▒░▀▄■□▪▫'; // Scramble characters
+      const glitchChars = '!@#$%^&*(){}[]|\\/<>~`░▒▓█';
+      let lineIndex = 0;
+      const lines = [];
+      let isFullyRevealed = false;
+      
+      // Create placeholder lines with scramble effect
+      ASCII_ART.forEach((_, i) => {
+        const line = document.createElement('div');
+        line.className = 'ascii-line font-mono';
+        line.style.cssText = `
+          color: #3b82f6;
+          white-space: pre;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        `;
+        container.appendChild(line);
+        lines.push(line);
+      });
+      
+      // Typewriter reveal effect
+      function revealLine() {
+        if (lineIndex < ASCII_ART.length) {
+          const targetLine = ASCII_ART[lineIndex];
+          const line = lines[lineIndex];
+          
+          line.style.opacity = '1';
+          line.classList.add('animate-glitch');
+          setTimeout(() => line.classList.remove('animate-glitch'), 300);
+          
+          let currentChar = 0;
+          const typeInterval = setInterval(() => {
+            if (currentChar <= targetLine.length) {
+              const revealed = targetLine.substring(0, currentChar);
+              let remaining = '';
+              for (let j = currentChar; j < targetLine.length; j++) {
+                if (targetLine[j] === ' ') {
+                  remaining += ' ';
+                } else {
+                  remaining += chars[Math.floor(Math.random() * chars.length)];
+                }
+              }
+              line.textContent = revealed + remaining;
+              currentChar++;
+            } else {
+              clearInterval(typeInterval);
+              line.textContent = targetLine;
+              line.style.color = 'transparent';
+              line.style.background = 'linear-gradient(90deg, #3b82f6, #06b6d4, #3b82f6)';
+              line.style.backgroundSize = '200% 100%';
+              line.style.webkitBackgroundClip = 'text';
+              line.style.backgroundClip = 'text';
+              line.style.animation = 'colorShift 3s ease-in-out infinite';
+              
+              lineIndex++;
+              setTimeout(revealLine, 50);
+            }
+          }, 2);
+          
+          // Scramble next lines preview
+          for (let i = lineIndex + 1; i < Math.min(lineIndex + 3, ASCII_ART.length); i++) {
+            const previewLine = lines[i];
+            if (previewLine) {
+              previewLine.style.opacity = '0.3';
+              let preview = '';
+              for (let j = 0; j < ASCII_ART[i].length; j++) {
+                if (ASCII_ART[i][j] === ' ') {
+                  preview += ' ';
+                } else {
+                  preview += chars[Math.floor(Math.random() * chars.length)];
+                }
+              }
+              previewLine.textContent = preview;
+            }
+          }
+        } else {
+          isFullyRevealed = true;
+          startConstantAnimations();
+        }
+      }
+      
+      // ==================== CONSTANT ANIMATIONS ====================
+      function startConstantAnimations() {
+        container.style.position = 'relative';
+        
+        // 1. Character Flicker Effect - Random characters blink
+        function flickerEffect() {
+          if (!isFullyRevealed) return;
+          
+          const randomLineIndex = Math.floor(Math.random() * lines.length);
+          const randomLine = lines[randomLineIndex];
+          const text = ASCII_ART[randomLineIndex];
+          
+          if (!text || text.length === 0) return;
+          
+          const charIndex = Math.floor(Math.random() * text.length);
+          const originalChar = text[charIndex];
+          
+          if (originalChar === ' ' || originalChar === '═' || originalChar === '║' || originalChar === '╔' || originalChar === '╗' || originalChar === '╚' || originalChar === '╝') return;
+          
+          const charsArray = text.split('');
+          charsArray[charIndex] = glitchChars[Math.floor(Math.random() * glitchChars.length)];
+          randomLine.textContent = charsArray.join('');
+          
+          setTimeout(() => {
+            randomLine.textContent = text;
+          }, 50 + Math.random() * 100);
+        }
+        setInterval(flickerEffect, 100);
+        
+        // 3. Wave Glitch - A wave of glitches sweeps through
+        function waveGlitch() {
+          if (!isFullyRevealed) return;
+          
+          let waveLine = 0;
+          const waveInterval = setInterval(() => {
+            if (waveLine < lines.length) {
+              const line = lines[waveLine];
+              const text = ASCII_ART[waveLine];
+              
+              // Randomly glitch some characters in this line
+              const glitched = text.split('').map(char => {
+                if (char !== ' ' && Math.random() > 0.85) {
+                  return glitchChars[Math.floor(Math.random() * glitchChars.length)];
+                }
+                return char;
+              }).join('');
+              
+              line.textContent = glitched;
+              line.style.textShadow = '0 0 10px rgba(59, 130, 246, 0.8)';
+              
+              setTimeout(() => {
+                line.textContent = text;
+                line.style.textShadow = '';
+              }, 80);
+              
+              waveLine++;
+            } else {
+              clearInterval(waveInterval);
+            }
+          }, 30);
+        }
+        setInterval(waveGlitch, 4000);
+        
+        // 4. Random Line Glitch - Entire lines glitch occasionally
+        function randomLineGlitch() {
+          if (!isFullyRevealed) return;
+          
+          const randomIndex = Math.floor(Math.random() * lines.length);
+          const line = lines[randomIndex];
+          
+          line.classList.add('animate-glitch');
+          line.style.textShadow = '2px 0 #ff0066, -2px 0 #00ffff';
+          
+          setTimeout(() => {
+            line.classList.remove('animate-glitch');
+            line.style.textShadow = '';
+          }, 100 + Math.random() * 150);
+        }
+        setInterval(randomLineGlitch, 800);
+        
+        // 5. Matrix Rain on Banner - Occasional falling characters
+        function matrixRainOnBanner() {
+          if (!isFullyRevealed) return;
+          
+          const randomLineIndex = Math.floor(Math.random() * lines.length);
+          const line = lines[randomLineIndex];
+          const text = ASCII_ART[randomLineIndex];
+          
+          // Pick a random position and make it "rain" down through the banner
+          const rainChar = MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
+          const charPos = Math.floor(Math.random() * Math.min(20, text.length));
+          
+          const chars = text.split('');
+          const originalChar = chars[charPos];
+          
+          if (originalChar !== ' ') {
+            chars[charPos] = rainChar;
+            line.textContent = chars.join('');
+            line.style.color = '#22c55e';
+            line.style.background = 'none';
+            line.style.webkitBackgroundClip = 'unset';
+            
+            setTimeout(() => {
+              line.textContent = text;
+              line.style.color = 'transparent';
+              line.style.background = 'linear-gradient(90deg, #3b82f6, #06b6d4, #3b82f6)';
+              line.style.backgroundSize = '200% 100%';
+              line.style.webkitBackgroundClip = 'text';
+              line.style.backgroundClip = 'text';
+            }, 150);
+          }
+        }
+        setInterval(matrixRainOnBanner, 300);
+        
+        // 6. Breathing/Pulse Effect on the whole banner
+        function breathingEffect() {
+          const currentOpacity = parseFloat(container.style.opacity || 1);
+          const time = Date.now() / 1000;
+          const breathe = 0.95 + Math.sin(time * 1.5) * 0.05;
+          container.style.opacity = breathe;
+          requestAnimationFrame(breathingEffect);
+        }
+        breathingEffect();
+        
+        // 7. Processing dots animation after the title
+        function processingDots() {
+          const titleLineIndex = ASCII_ART.findIndex(line => line.includes('AI Model Dashboard'));
+          if (titleLineIndex === -1) return;
+          
+          const line = lines[titleLineIndex];
+          const baseText = ASCII_ART[titleLineIndex];
+          const dots = ['   ', '.  ', '.. ', '...', ' ..', '  .'];
+          let dotIndex = 0;
+          
+          setInterval(() => {
+            // Find where to add dots (after the last ⚡)
+            const lastEmojiIndex = baseText.lastIndexOf('⚡');
+            if (lastEmojiIndex !== -1) {
+              const modified = baseText.substring(0, lastEmojiIndex + 1) + dots[dotIndex] + baseText.substring(lastEmojiIndex + 4);
+              // Only modify spaces after the title
+              const titleEnd = modified.indexOf('Dashboard') + 11;
+              const result = modified.substring(0, titleEnd) + dots[dotIndex] + modified.substring(titleEnd + 3);
+              line.textContent = result.replace(/\s+$/, '');
+            }
+            dotIndex = (dotIndex + 1) % dots.length;
+          }, 400);
+        }
+        processingDots();
+        
+        // 8. Color Wave - Moving color highlight
+        function colorWave() {
+          let wavePos = 0;
+          const waveSpeed = 0.02;
+          
+          function animate() {
+            wavePos += waveSpeed;
+            if (wavePos > 1) wavePos = 0;
+            
+            const gradientPos = wavePos * 100;
+            lines.forEach((line, i) => {
+              if (line.style.background && line.style.background.includes('gradient')) {
+                const offset = (i * 3) % 100;
+                line.style.backgroundPosition = `${gradientPos + offset}% 0`;
+              }
+            });
+            
+            requestAnimationFrame(animate);
+          }
+          animate();
+        }
+        colorWave();
+        
+        // 9. Sparkle Effect - Random bright spots
+        function sparkleEffect() {
+          if (!isFullyRevealed) return;
+          
+          const randomLineIndex = Math.floor(Math.random() * lines.length);
+          const line = lines[randomLineIndex];
+          
+          line.style.filter = 'brightness(1.5)';
+          line.style.textShadow = '0 0 20px rgba(6, 182, 212, 0.8)';
+          
+          setTimeout(() => {
+            line.style.filter = '';
+            line.style.textShadow = '';
+          }, 100);
+        }
+        setInterval(sparkleEffect, 500);
+        
+        // 10. Border Glow Animation
+        const bannerBorder = document.createElement('div');
+        bannerBorder.style.cssText = `
+          position: absolute;
+          inset: -2px;
+          border: 2px solid transparent;
+          border-radius: 8px;
+          pointer-events: none;
+          z-index: 5;
+        `;
+        container.appendChild(bannerBorder);
+        
+        function borderGlow() {
+          const time = Date.now() / 1000;
+          const hue = (time * 30) % 360;
+          bannerBorder.style.borderColor = `hsla(${hue}, 70%, 50%, 0.3)`;
+          bannerBorder.style.boxShadow = `0 0 15px hsla(${hue}, 70%, 50%, 0.2)`;
+          requestAnimationFrame(borderGlow);
+        }
+        borderGlow();
+      }
+      
+      // Start the animation sequence
+      setTimeout(() => {
+        for (let i = 0; i < 3 && i < lines.length; i++) {
+          lines[i].style.opacity = '0.3';
+        }
+        setTimeout(revealLine, 200);
+      }, 100);
+    }
+
+    // ==================== Particles ====================
+    function createParticles() {
+      const container = document.getElementById('particles');
+      for (let i = 0; i < 15; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'absolute w-1 h-1 bg-blue-400/20 rounded-full';
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.animation = `float ${10 + Math.random() * 20}s ease-in-out infinite`;
+        particle.style.animationDelay = `${Math.random() * 5}s`;
+        container.appendChild(particle);
+      }
+    }
+
+    // ==================== Matrix Rain ====================
+    function createMatrixRain() {
+      const container = document.getElementById('matrix-rain');
+      for (let i = 0; i < 50; i++) {
+        const char = document.createElement('span');
+        char.className = 'absolute text-green-500 text-xs font-mono';
+        char.style.left = `${i * 2}%`;
+        char.style.top = `${Math.random() * 100}%`;
+        char.style.animation = `fall ${5 + Math.random() * 10}s linear infinite`;
+        char.style.animationDelay = `${Math.random() * 5}s`;
+        char.textContent = MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
+        container.appendChild(char);
+      }
+
+      // Animate characters
+      setInterval(() => {
+        const chars = container.querySelectorAll('span');
+        chars.forEach(char => {
+          if (Math.random() > 0.7) {
+            char.textContent = MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
+          }
+        });
+      }, 100);
+    }
+
+    // ==================== Render Models ====================
+    function renderModels() {
+      const grid = document.getElementById('models-grid');
+      const emptyState = document.getElementById('empty-state');
+      
+      // Sort: favorites first, then by name
+      const sorted = [...models].sort((a, b) => {
+        if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      if (sorted.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        grid.innerHTML = sorted.map(model => createModelCard(model)).join('');
+      }
+
+      // Update counts
+      document.getElementById('model-count').textContent = models.length;
+      document.getElementById('favorite-count').textContent = models.filter(m => m.isFavorite).length;
+    }
+
+    function createModelCard(model) {
+      const hostname = (() => {
+        try {
+          return new URL(model.url).hostname;
+        } catch {
+          return model.url;
+        }
+      })();
+
+      return `
+        <div class="group relative overflow-hidden rounded-2xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02]" onclick="navigateTo('${model.url}')">
+          <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          
+          <div class="p-5">
+            <!-- Header -->
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${escapeHtml(model.name)}</h3>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">${escapeHtml(hostname)}</p>
+                </div>
+              </div>
+              
+              <button onclick="event.stopPropagation(); toggleFavorite('${model.id}')" class="p-1.5 rounded-lg transition-all duration-200 ${model.isFavorite ? 'text-yellow-500 hover:text-yellow-600' : 'text-gray-300 hover:text-yellow-500 dark:text-gray-600 dark:hover:text-yellow-500'}">
+                <svg class="w-4 h-4 ${model.isFavorite ? 'fill-current' : ''}" fill="${model.isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Description -->
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">${escapeHtml(model.description || 'No description available')}</p>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+              <button onclick="event.stopPropagation(); openEditModal('${model.id}')" class="flex-1 h-8 text-xs px-3 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit
+              </button>
+              <button onclick="event.stopPropagation(); openDeleteModal('${model.id}')" class="flex-1 h-8 text-xs px-3 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Delete
+              </button>
+            </div>
+
+            <!-- External Link Indicator -->
+            <div class="absolute top-3 right-3 opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ==================== Model Actions ====================
+    function navigateTo(url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function toggleFavorite(id) {
+      const model = models.find(m => m.id === id);
+      if (model) {
+        model.isFavorite = !model.isFavorite;
+        saveModels();
+        renderModels();
+      }
+    }
+
+    // ==================== Search Modal ====================
+    function openSearch() {
+      document.getElementById('search-modal').classList.remove('hidden');
+      document.getElementById('search-input').value = '';
+      document.getElementById('search-input').focus();
+      filterModels('');
+      selectedSearchIndex = 0;
+    }
+
+    function closeSearch() {
+      document.getElementById('search-modal').classList.add('hidden');
+    }
+
+    function filterModels(query) {
+      const results = document.getElementById('search-results');
+      const q = query.toLowerCase().trim();
+      
+      const filtered = q 
+        ? models.filter(m => 
+            m.name.toLowerCase().includes(q) || 
+            m.url.toLowerCase().includes(q) || 
+            (m.description && m.description.toLowerCase().includes(q))
+          )
+        : models;
+
+      selectedSearchIndex = 0;
+
+      if (filtered.length === 0) {
+        results.innerHTML = '<div class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No models found.</div>';
+        return;
+      }
+
+      results.innerHTML = filtered.map((model, index) => `
+        <div 
+          class="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors ${index === 0 ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}"
+          onclick="selectSearchResult('${model.id}')"
+          data-index="${index}"
+        >
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-gray-900 dark:text-white">${escapeHtml(model.name)}</div>
+            <div class="text-xs text-gray-500 truncate">${escapeHtml(model.url)}</div>
+          </div>
+          ${model.isFavorite ? '<svg class="w-4 h-4 text-yellow-500 fill-current" viewBox="0 0 24 24"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>' : ''}
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+        </div>
+      `).join('');
+    }
+
+    function handleSearchKeydown(event) {
+      const items = document.querySelectorAll('#search-results [data-index]');
+      
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        selectedSearchIndex = Math.min(selectedSearchIndex + 1, items.length - 1);
+        updateSearchSelection(items);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        selectedSearchIndex = Math.max(selectedSearchIndex - 1, 0);
+        updateSearchSelection(items);
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        const selected = items[selectedSearchIndex];
+        if (selected) {
+          const id = selected.getAttribute('onclick').match(/'([^']+)'/)[1];
+          selectSearchResult(id);
+        }
+      }
+    }
+
+    function updateSearchSelection(items) {
+      items.forEach((item, index) => {
+        if (index === selectedSearchIndex) {
+          item.classList.add('bg-gray-100', 'dark:bg-gray-800');
+        } else {
+          item.classList.remove('bg-gray-100', 'dark:bg-gray-800');
+        }
+      });
+    }
+
+    function selectSearchResult(id) {
+      const model = models.find(m => m.id === id);
+      if (model) {
+        closeSearch();
+        navigateTo(model.url);
+      }
+    }
+
+    // ==================== Form Modal ====================
+    function openAddModal() {
+      currentEditId = null;
+      document.getElementById('form-title').innerHTML = `
+        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+        </svg>
+        Add New AI Model
+      `;
+      document.getElementById('form-submit-text').textContent = 'Add Model';
+      document.getElementById('form-name').value = '';
+      document.getElementById('form-url').value = '';
+      document.getElementById('form-description').value = '';
+      document.getElementById('form-edit-id').value = '';
+      document.getElementById('form-modal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('form-name').focus(), 100);
+    }
+
+    function openEditModal(id) {
+      const model = models.find(m => m.id === id);
+      if (!model) return;
+      
+      currentEditId = id;
+      document.getElementById('form-title').innerHTML = `
+        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+        </svg>
+        Edit AI Model
+      `;
+      document.getElementById('form-submit-text').textContent = 'Save Changes';
+      document.getElementById('form-name').value = model.name;
+      document.getElementById('form-url').value = model.url;
+      document.getElementById('form-description').value = model.description || '';
+      document.getElementById('form-edit-id').value = id;
+      document.getElementById('form-modal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('form-name').focus(), 100);
+    }
+
+    function closeFormModal() {
+      document.getElementById('form-modal').classList.add('hidden');
+      currentEditId = null;
+    }
+
+    function handleFormSubmit(event) {
+      event.preventDefault();
+      
+      const name = document.getElementById('form-name').value.trim();
+      let url = document.getElementById('form-url').value.trim();
+      const description = document.getElementById('form-description').value.trim();
+      const editId = document.getElementById('form-edit-id').value;
+
+      if (!name || !url) return;
+
+      // Add protocol if missing
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+
+      if (editId) {
+        // Edit existing
+        const model = models.find(m => m.id === editId);
+        if (model) {
+          model.name = name;
+          model.url = url;
+          model.description = description || undefined;
+        }
+      } else {
+        // Add new
+        models.push({
+          id: Date.now().toString(),
+          name,
+          url,
+          description: description || undefined,
+          isFavorite: false,
+          createdAt: Date.now()
+        });
+      }
+
+      saveModels();
+      renderModels();
+      closeFormModal();
+    }
+
+    // ==================== Delete Modal ====================
+    function openDeleteModal(id) {
+      const model = models.find(m => m.id === id);
+      if (!model) return;
+      
+      document.getElementById('delete-model-name').textContent = model.name;
+      document.getElementById('delete-model-id').value = id;
+      document.getElementById('delete-modal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('delete-modal').classList.add('hidden');
+    }
+
+    function confirmDelete() {
+      const id = document.getElementById('delete-model-id').value;
+      models = models.filter(m => m.id !== id);
+      saveModels();
+      renderModels();
+      closeDeleteModal();
+    }
+
+    // ==================== Keyboard Shortcuts ====================
+    document.addEventListener('keydown', (e) => {
+      // Ignore if typing in input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        if (e.key === 'Escape') {
+          e.target.blur();
+          closeAllModals();
+        }
+        return;
+      }
+
+      // K or / to open search
+      if (e.key === 'k' || e.key === '/' || e.key === 'K') {
+        e.preventDefault();
+        openSearch();
+      }
+
+      // N for new model
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        openAddModal();
+      }
+
+      // Escape to close
+      if (e.key === 'Escape') {
+        closeAllModals();
+      }
+    });
+
+    function closeAllModals() {
+      closeSearch();
+      closeFormModal();
+      closeDeleteModal();
+    }
+
+    // ==================== Initialize ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadTheme();
+      loadModels();
+      renderModels();
+      animateASCII();
+      createParticles();
+      createMatrixRain();
+    });
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      const theme = localStorage.getItem(THEME_KEY) || 'system';
+      if (theme === 'system') {
+        applyTheme('system');
+      }
+    });
+  </script>
+</body>
+</html>
