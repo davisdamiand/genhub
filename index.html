@@ -768,8 +768,9 @@
       const grid = document.getElementById('models-grid');
       const emptyState = document.getElementById('empty-state');
       
-      // Sort: favorites first, then by name
+      // Sort: pinned first, then favorites, then by name
       const sorted = [...models].sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
         if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
         return a.name.localeCompare(b.name);
       });
@@ -810,7 +811,10 @@
                   </svg>
                 </div>
                 <div>
-                  <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${escapeHtml(model.name)}</h3>
+                  <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-1">
+                    ${escapeHtml(model.name)}
+                    ${model.isPinned ? `<svg class="w-3.5 h-3.5 text-blue-500 fill-current" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>` : ''}
+                  </h3>
                   <p class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">${escapeHtml(hostname)}</p>
                 </div>
               </div>
@@ -827,6 +831,12 @@
 
             <!-- Actions -->
             <div class="flex items-center gap-2 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+              <button onclick="event.stopPropagation(); togglePin('${model.id}')" class="flex-1 h-8 text-xs px-3 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-1">
+                <svg class="w-3 h-3 ${model.isPinned ? 'fill-current text-blue-500' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                </svg>
+                ${model.isPinned ? 'Unpin' : 'Pin'}
+              </button>
               <button onclick="event.stopPropagation(); openEditModal('${model.id}')" class="flex-1 h-8 text-xs px-3 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-1">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -861,6 +871,15 @@
     // ==================== Model Actions ====================
     function navigateTo(url) {
       window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function togglePin(id) {
+      const model = models.find(m => m.id === id);
+      if (model) {
+        model.isPinned = !model.isPinned;
+        saveModels();
+        renderModels();
+      }
     }
 
     function toggleFavorite(id) {
